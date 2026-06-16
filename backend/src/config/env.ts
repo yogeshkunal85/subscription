@@ -40,6 +40,7 @@ const config = {
   reminderDays: optionalNumber('REMINDER_DAYS', 7),
   port: optionalNumber('PORT', 3000),
   nodeEnv: optional('NODE_ENV', 'development'),
+  corsOrigin: optional('CORS_ORIGIN', '*'),
 } as const;
 
 export default config;

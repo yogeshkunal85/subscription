@@ -1,9 +1,17 @@
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 import apiRoutes from './routes';
 import errorHandler from './middleware/errorHandler';
+import config from './config/env';
 
 const app = express();
 
+const corsOrigins =
+  config.corsOrigin === '*'
+    ? true
+    : config.corsOrigin.split(',').map((origin) => origin.trim());
+
+app.use(cors({ origin: corsOrigins }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
