@@ -2,6 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import * as subscriptionService from '../services/subscriptionService';
 import { ApiResponse, Subscription, SubscriptionStatus, BillingCycle } from '../types';
 
+interface UpdateSubscriptionBody {
+  user_id?: number;
+  name?: string;
+  amount?: number;
+  currency?: string;
+  billing_cycle?: BillingCycle;
+  next_renewal_date?: string;
+}
+
 export async function listSubscriptions(
   req: Request,
   res: Response,
@@ -85,7 +94,10 @@ export async function updateSubscription(
 ): Promise<void> {
   try {
     const id = parseInt(req.params['id'], 10);
-    const updated = await subscriptionService.updateSubscription(id, req.body as Partial<Subscription>);
+    const updated = await subscriptionService.updateSubscription(
+      id,
+      req.body as UpdateSubscriptionBody,
+    );
 
     if (!updated) {
       next({ status: 404, code: 'NOT_FOUND', message: 'Subscription not found.' });
