@@ -2,6 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 import * as userService from '../services/userService';
 import { ApiResponse, User } from '../types';
 
+export async function getAllUsers(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const users = await userService.getAllUsers();
+    const body: ApiResponse<User[]> = { success: true, data: users };
+    res.json(body);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { name, email } = req.body as { name: string; email: string };

@@ -1,6 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import pool from '../config/db';
-import { Subscription, Reminder, ListParams, BillingCycle } from '../types';
+import { AppError, Subscription, Reminder, ListParams, BillingCycle } from '../types';
+import { getUserById } from './userService';
 
 interface SubscriptionWithReminders extends Subscription {
   reminders: Reminder[];
@@ -74,7 +75,43 @@ export async function getSubscriptionById(id: number): Promise<SubscriptionWithR
   return { ...subscription, reminders: reminderRows as Reminder[] };
 }
 
+async function getActiveSubscriptionByUserAndName(
+  userId: number,
+  name: string,
+): Promise<Subscription | null> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT * FROM subscriptions
+     WHERE user_id = ? AND name = ? AND status = 'active'
+     LIMIT 1`,
+    [userId, name],
+  );
+
+  return rows.length > 0 ? (rows[0] as Subscription) : null;
+}
+
 export async function createSubscription(input: CreateSubscriptionInput): Promise<Subscription> {
+  const name = input.name.trim();
+
+  const user = await getUserById(input.user_id);
+  if (!user) {
+    const err: AppError = {
+      status: 404,
+      code: 'NOT_FOUND',
+      message: 'User not found.',
+    };
+    throw err;
+  }
+
+  const duplicate = await getActiveSubscriptionByUserAndName(input.user_id, name);
+  if (duplicate) {
+    const err: AppError = {
+      status: 409,
+      code: 'CONFLICT',
+      message: 'This user already has an active subscription with this name.',
+    };
+    throw err;
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -85,7 +122,7 @@ export async function createSubscription(input: CreateSubscriptionInput): Promis
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         input.user_id,
-        input.name,
+        name,
         input.amount,
         input.currency,
         input.billing_cycle,
